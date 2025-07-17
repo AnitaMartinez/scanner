@@ -1,15 +1,22 @@
 #!/usr/bin/env python3
 
+# Standard libraries
+import os # allows the interaction with the operating system, like handling files, folders...
+import sys
+import time
 import subprocess
+import threading
+import requests
+import json
+# Parsing and networking
+import argparse
+from urllib.parse import urlparse
+# Output formatting
 import csv
 import pandas as pd
 from tabulate import tabulate
-import argparse
-from urllib.parse import urlparse
+# Logging
 import logging
-import threading
-import time
-import sys
 
 # ─── Params ──────────────────────────────────────────────────────────────────
 parser = argparse.ArgumentParser(description="Web hacking toolkit that orchestrates recon and scanning tasks") # This description appears when user writes --help
@@ -23,6 +30,9 @@ ports = args.port
 target_ip = urlparse(url).hostname # To extract IP from the URL
 results = []
 spinner_running = False
+
+current_dir = os.path.dirname(os.path.abspath(__file__)) # Get current directory
+seclist_file = os.path.join(current_dir, "utils", "seclist_discovery.txt")
 
 # ─── Spinner ─────────────────────────────────────────────────────────────
 class Spinner:
@@ -65,13 +75,14 @@ logging.basicConfig(
 # ─── Tools and Commands ────────────────────────────────────────────────────────
 commands = {
     # General Scanning
-    "Nmap": ["nmap", "-sV", "-p", ports, target_ip],
+    # "Nmap": ["nmap", "-sV", "-p", ports, target_ip],
     # Technology Fingerprint
     "WhatWeb": ["whatweb", url],
-    "Wafw00f": ["wafw00f", url],
+    # "Wafw00f": ["wafw00f", url],
     # Directory Enumeration (brute force). Content discovery
+    "Ffuf": ["ffuf", "-u", f"{url}/FUZZ" , "-w", seclist_file, "-of", "json", "-o", "./outputs/ffuf_result.json"], 
     # Vulnerability Scanning
-    "Nikto": ["nikto", "-h", url]
+    # "Nikto": ["nikto", "-h", url]
 }
 
 logging.info(f"Target URL: {url}")
@@ -94,6 +105,26 @@ def log_checking_codes(tool_name, result, output):
         logging.info(f"{tool_name} executed successfully.")
     return output
 
+def get_ffuf_results():
+    ffuf_json_path = "./outputs/ffuf_result.json"
+    with open(ffuf_json_path, "r") as file:
+        data = json.load(file)
+    return data.get("results", [])
+
+# Send a fake request to determine the length of a wildcard response.
+def get_wildcard_length():
+    fake_url = f"{url}/zz_fake_wildcard_check_path_999"
+    try:
+        resp = requests.get(fake_url, timeout=5)
+        return len(resp.text)
+    except Exception as e:
+        logging.warning(f"[Ffuf] Wildcard detection failed: {e}")
+        return None
+
+# Filter ffuf results by excluding those matching the wildcard response length.
+def filter_by_length(ffuf_results, wildcard_length):
+    return [r for r in ffuf_results if r["length"] != wildcard_length]
+
 for tool_name, cmd in commands.items():
     logging.info(f"Running {tool_name}")
     spinner = Spinner(f"Running {tool_name}")
@@ -103,7 +134,7 @@ for tool_name, cmd in commands.items():
     
     spinner.stop()
     
-    output = result.stdout
+    output = result.stdout  # TODO: refactor this, I don't like variable mutation
     output = log_checking_codes(tool_name, result, output)
 
     # Clean outputs
@@ -126,6 +157,15 @@ for tool_name, cmd in commands.items():
             ):
                 filtered_lines.append(line)
         output = "\n".join(filtered_lines).strip()
+    elif tool_name == "Ffuf":
+        ffuf_results = get_ffuf_results()
+        wildcard_length = get_wildcard_length()
+        if wildcard_length is not None:
+            filtered_results = filter_by_length(ffuf_results, wildcard_length)
+            output = "\n".join(
+                f'{r["input"]["FUZZ"]} [Status: {r["status"]}, Size: {r["length"]}]'
+                for r in filtered_results
+            )
 
     results.append({
         "Tool": tool_name,
