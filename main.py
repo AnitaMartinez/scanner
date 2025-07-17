@@ -18,6 +18,12 @@ from tabulate import tabulate
 # Logging
 import logging
 
+# ─── Modules ──────────────────────────────────────────────────────────────────
+current_dir = os.path.dirname(os.path.abspath(__file__)) # Get current directory
+sys.path.append(os.path.join(current_dir, "modules")) # This must come before the import, or Python won't know where to find the visualization module
+from whatweb_display import display_whatweb_result 
+seclist_file = os.path.join(current_dir, "utils", "seclist_discovery.txt")
+
 # ─── Params ──────────────────────────────────────────────────────────────────
 parser = argparse.ArgumentParser(description="Web hacking toolkit that orchestrates recon and scanning tasks") # This description appears when user writes --help
 parser.add_argument('-u', '--url', type=str, required=True, help="Target URL. Example: http://example.com")
@@ -30,9 +36,6 @@ ports = args.port
 target_ip = urlparse(url).hostname # To extract IP from the URL
 results = []
 spinner_running = False
-
-current_dir = os.path.dirname(os.path.abspath(__file__)) # Get current directory
-seclist_file = os.path.join(current_dir, "utils", "seclist_discovery.txt")
 
 # ─── Spinner ─────────────────────────────────────────────────────────────
 class Spinner:
@@ -78,9 +81,9 @@ commands = {
     # "Nmap": ["nmap", "-sV", "-p", ports, target_ip],
     # Technology Fingerprint
     "WhatWeb": ["whatweb", url],
-    # "Wafw00f": ["wafw00f", url],
+    "Wafw00f": ["wafw00f", url],
     # Directory Enumeration (brute force). Content discovery
-    "Ffuf": ["ffuf", "-u", f"{url}/FUZZ" , "-w", seclist_file, "-of", "json", "-o", "./outputs/ffuf_result.json"], 
+    # "Ffuf": ["ffuf", "-u", f"{url}/FUZZ" , "-w", seclist_file, "-of", "json", "-o", "./outputs/ffuf_result.json"], 
     # Vulnerability Scanning
     # "Nikto": ["nikto", "-h", url]
 }
@@ -121,9 +124,9 @@ def get_wildcard_length():
         logging.warning(f"[Ffuf] Wildcard detection failed: {e}")
         return None
 
-# Filter ffuf results by excluding those matching the wildcard response length.
-def filter_by_length(ffuf_results, wildcard_length):
-    return [r for r in ffuf_results if r["length"] != wildcard_length]
+def filter_by_length(
+    ffuf_results, wildcard_length):
+        return [result for result in ffuf_results if result["length"] != wildcard_length]
 
 for tool_name, cmd in commands.items():
     logging.info(f"Running {tool_name}")
@@ -163,7 +166,7 @@ for tool_name, cmd in commands.items():
         if wildcard_length is not None:
             filtered_results = filter_by_length(ffuf_results, wildcard_length)
             output = "\n".join(
-                f'{r["input"]["FUZZ"]} [Status: {r["status"]}, Size: {r["length"]}]'
+                f'{r["input"]["FUZZ"]} [Status: {r["status"]}, Size: {r["length"]}, Words: {r["words"]}, Lines: {r["lines"]}, Words: {r["words"]}]' # TODO: I'd prefer shows all the response, not only these properties
                 for r in filtered_results
             )
 
@@ -184,11 +187,12 @@ with open("scan_results.csv", "w", newline="") as csvfile:
     for row in results:
         writer.writerow(row)
 
-# ─── Display results in a table with panda ───────────────────────────────────────────────────────────
+# ─── Display ───────────────────────────────────────────────────────────
 logging.info("Reading and displaying results...")
 
-df = pd.read_csv("scan_results.csv")
-print("\n Scan Results:")
-print(tabulate(df, headers='keys', tablefmt='fancy_grid'))
-
-logging.info(f"Scan complete. Results saved to {csv_filename}")
+# -- WhatWeb --
+csv_file = pd.read_csv("scan_results.csv")
+whatweb_row = csv_file[csv_file["Tool"] == "WhatWeb"]
+if not whatweb_row.empty:
+    raw_output = whatweb_row["Result"].values[0]
+    display_whatweb_result(raw_output)
