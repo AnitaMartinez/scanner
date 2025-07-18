@@ -22,6 +22,8 @@ import logging
 current_dir = os.path.dirname(os.path.abspath(__file__)) # Get current directory
 sys.path.append(os.path.join(current_dir, "modules")) # This must come before the import, or Python won't know where to find the visualization module
 from whatweb_display import display_whatweb_result 
+from nmap_display import display_nmap_result 
+from ffuf_display import display_ffuf_result
 seclist_file = os.path.join(current_dir, "utils", "seclist_discovery.txt")
 
 # ─── Params ──────────────────────────────────────────────────────────────────
@@ -36,6 +38,19 @@ ports = args.port
 target_ip = urlparse(url).hostname # To extract IP from the URL
 results = []
 spinner_running = False
+
+# ─── Tools and Commands ────────────────────────────────────────────────────────
+commands = {
+    # General Scanning
+    #"Nmap": ["nmap", "-sV", "-p", ports, target_ip],
+    # Technology Fingerprint
+    #"WhatWeb": ["whatweb", url],
+    #"Wafw00f": ["wafw00f", url],
+    # Directory Enumeration (brute force). Content discovery
+    "Ffuf": ["ffuf", "-u", f"{url}/FUZZ" , "-w", seclist_file, "-of", "json", "-o", "./outputs/ffuf_result.json"], 
+    # Vulnerability Scanning
+    # "Nikto": ["nikto", "-h", url]
+}
 
 # ─── Spinner ─────────────────────────────────────────────────────────────
 class Spinner:
@@ -74,19 +89,6 @@ logging.basicConfig(
         logging.StreamHandler() # To also show the log in the terminal 
     ]
 )
-
-# ─── Tools and Commands ────────────────────────────────────────────────────────
-commands = {
-    # General Scanning
-    # "Nmap": ["nmap", "-sV", "-p", ports, target_ip],
-    # Technology Fingerprint
-    "WhatWeb": ["whatweb", url],
-    "Wafw00f": ["wafw00f", url],
-    # Directory Enumeration (brute force). Content discovery
-    # "Ffuf": ["ffuf", "-u", f"{url}/FUZZ" , "-w", seclist_file, "-of", "json", "-o", "./outputs/ffuf_result.json"], 
-    # Vulnerability Scanning
-    # "Nikto": ["nikto", "-h", url]
-}
 
 logging.info(f"Target URL: {url}")
 logging.info(f"Ports to scan: {ports}")
@@ -169,7 +171,7 @@ for tool_name, cmd in commands.items():
                 f'{r["input"]["FUZZ"]} [Status: {r["status"]}, Size: {r["length"]}, Words: {r["words"]}, Lines: {r["lines"]}, Words: {r["words"]}]' # TODO: I'd prefer shows all the response, not only these properties
                 for r in filtered_results
             )
-
+            
     results.append({
         "Tool": tool_name,
         "Result": output.strip()
@@ -190,9 +192,26 @@ with open("scan_results.csv", "w", newline="") as csvfile:
 # ─── Display ───────────────────────────────────────────────────────────
 logging.info("Reading and displaying results...")
 
-# -- WhatWeb --
 csv_file = pd.read_csv("scan_results.csv")
+
+# -- nmap --
+nmap_row = csv_file[csv_file["Tool"] == "Nmap"]
+if not nmap_row.empty:
+    raw_output = nmap_row["Result"].values[0]
+    display_nmap_result(raw_output)
+
+# -- WhatWeb --
 whatweb_row = csv_file[csv_file["Tool"] == "WhatWeb"]
 if not whatweb_row.empty:
     raw_output = whatweb_row["Result"].values[0]
     display_whatweb_result(raw_output)
+
+logging.info(f"Scan complete. Results saved to {csv_filename}")
+
+# ffuf
+ffuf_row = csv_file[csv_file["Tool"] == "Ffuf"]
+if not ffuf_row.empty:
+    raw_output = ffuf_row["Result"].values[0]
+    display_ffuf_result(raw_output)
+
+# print(tabulate(csv_file, headers='keys', tablefmt='fancy_grid'))
