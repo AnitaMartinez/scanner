@@ -24,6 +24,7 @@ sys.path.append(os.path.join(current_dir, "modules")) # This must come before th
 from whatweb_display import display_whatweb_result 
 from nmap_display import display_nmap_result 
 from ffuf_display import display_ffuf_result
+from nikto_display import display_nikto_result
 seclist_file = os.path.join(current_dir, "utils", "seclist_discovery.txt")
 
 # ─── Params ──────────────────────────────────────────────────────────────────
@@ -47,9 +48,9 @@ commands = {
     #"WhatWeb": ["whatweb", url],
     #"Wafw00f": ["wafw00f", url],
     # Directory Enumeration (brute force). Content discovery
-    "Ffuf": ["ffuf", "-u", f"{url}/FUZZ" , "-w", seclist_file, "-of", "json", "-o", "./outputs/ffuf_result.json"], 
+    # "Ffuf": ["ffuf", "-u", f"{url}/FUZZ" , "-w", seclist_file, "-of", "json", "-o", "./outputs/ffuf_result.json"], 
     # Vulnerability Scanning
-    # "Nikto": ["nikto", "-h", url]
+    "Nikto": ["nikto", "-h", url]
 }
 
 # ─── Spinner ─────────────────────────────────────────────────────────────
@@ -171,7 +172,27 @@ for tool_name, cmd in commands.items():
                 f'{r["input"]["FUZZ"]} [Status: {r["status"]}, Size: {r["length"]}, Words: {r["words"]}, Lines: {r["lines"]}, Words: {r["words"]}]' # TODO: I'd prefer shows all the response, not only these properties
                 for r in filtered_results
             )
-            
+    elif tool_name == "Nikto":
+        seen_paths = set()
+        filtered_lines = []
+
+        for line in output.splitlines():
+            if not line.startswith("+") or line.startswith("+-"):
+                continue  # Skip headers, formatting lines
+
+            parts = line.split()
+            path = next((p for p in parts if p.startswith("/")), None)
+
+            if path:
+                basename = os.path.splitext(os.path.basename(path))[0]
+                if basename in seen_paths:
+                    continue
+                seen_paths.add(basename)
+
+            filtered_lines.append(line.strip())
+
+    output = "\n".join(filtered_lines)
+
     results.append({
         "Tool": tool_name,
         "Result": output.strip()
@@ -208,10 +229,16 @@ if not whatweb_row.empty:
 
 logging.info(f"Scan complete. Results saved to {csv_filename}")
 
-# ffuf
+# -- Ffuf --
 ffuf_row = csv_file[csv_file["Tool"] == "Ffuf"]
 if not ffuf_row.empty:
     raw_output = ffuf_row["Result"].values[0]
     display_ffuf_result(raw_output)
+    
+# -- Nikto --
+nikto_row = csv_file[csv_file["Tool"] == "Nikto"]
+if not nikto_row.empty:
+    raw_output = nikto_row["Result"].values[0]
+    display_nikto_result(raw_output)
 
 # print(tabulate(csv_file, headers='keys', tablefmt='fancy_grid'))
