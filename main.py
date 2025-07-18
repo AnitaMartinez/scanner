@@ -25,6 +25,8 @@ from whatweb_display import display_whatweb_result
 from nmap_display import display_nmap_result 
 from ffuf_display import display_ffuf_result
 from nikto_display import display_nikto_result
+from wafwoof_display import display_wafwoof_result
+from summary_display import display_tool_summary
 seclist_file = os.path.join(current_dir, "utils", "seclist_discovery.txt")
 
 # ─── Params ──────────────────────────────────────────────────────────────────
@@ -43,12 +45,12 @@ spinner_running = False
 # ─── Tools and Commands ────────────────────────────────────────────────────────
 commands = {
     # General Scanning
-    #"Nmap": ["nmap", "-sV", "-p", ports, target_ip],
+    "Nmap": ["nmap", "-sV", "-p", ports, target_ip],
     # Technology Fingerprint
-    #"WhatWeb": ["whatweb", url],
-    #"Wafw00f": ["wafw00f", url],
+    "WhatWeb": ["whatweb", url],
+    "Wafwoof": ["wafw00f", url],
     # Directory Enumeration (brute force). Content discovery
-    # "Ffuf": ["ffuf", "-u", f"{url}/FUZZ" , "-w", seclist_file, "-of", "json", "-o", "./outputs/ffuf_result.json"], 
+    "Ffuf": ["ffuf", "-u", f"{url}/FUZZ" , "-w", seclist_file, "-of", "json", "-o", "./outputs/ffuf_result.json"], 
     # Vulnerability Scanning
     "Nikto": ["nikto", "-h", url]
 }
@@ -144,7 +146,7 @@ for tool_name, cmd in commands.items():
     output = log_checking_codes(tool_name, result, output)
 
     # Clean outputs
-    if tool_name == "Wafw00f":
+    if tool_name == "Wafwoof":
         for line in output.splitlines():
             if "No WAF detected" in line or "is behind" in line:
                 output = line
@@ -191,7 +193,7 @@ for tool_name, cmd in commands.items():
 
             filtered_lines.append(line.strip())
 
-    output = "\n".join(filtered_lines)
+        output = "\n".join(filtered_lines)
 
     results.append({
         "Tool": tool_name,
@@ -227,7 +229,11 @@ if not whatweb_row.empty:
     raw_output = whatweb_row["Result"].values[0]
     display_whatweb_result(raw_output)
 
-logging.info(f"Scan complete. Results saved to {csv_filename}")
+# -- Wafwoof --
+wafwoof = csv_file[csv_file["Tool"] == "Wafwoof"]
+if not wafwoof.empty:
+    raw_output = wafwoof["Result"].values[0]
+    display_wafwoof_result(raw_output)
 
 # -- Ffuf --
 ffuf_row = csv_file[csv_file["Tool"] == "Ffuf"]
@@ -240,5 +246,9 @@ nikto_row = csv_file[csv_file["Tool"] == "Nikto"]
 if not nikto_row.empty:
     raw_output = nikto_row["Result"].values[0]
     display_nikto_result(raw_output)
+    
+display_tool_summary(results)
+    
+logging.info(f"Scan complete. Results saved to {csv_filename}")
 
 # print(tabulate(csv_file, headers='keys', tablefmt='fancy_grid'))
