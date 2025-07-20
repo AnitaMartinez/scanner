@@ -14,9 +14,9 @@ WHACK runs the following tools automatically:
 Results are cleaned, parsed, and saved into a CSV report, with a structured summary displayed in the terminal.
 
 ##### Options:
-  `-h, --help`       show this help message and exit
-  `-u, --url URL`    Target URL. Example: http://example.com
-  `-p, --port PORT`  Target port(s), comma-separated. Default: 80,443
+  - `-h, --help`       show this help message and exit
+  - `-u, --url URL`    Target URL. Example: http://example.com
+  - `-p, --port PORT`  Target port(s), comma-separated. Default: 80,443
 
 ####  🔒 Disclaimer
 
