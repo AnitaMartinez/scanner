@@ -9,12 +9,12 @@ import threading
 import requests
 import json
 # Parsing and networking
-import argparse
+from argparse import ArgumentParser, RawTextHelpFormatter
 from urllib.parse import urlparse
+from argparse import RawTextHelpFormatter
 # Output formatting
 import csv
 import pandas as pd
-from tabulate import tabulate
 # Logging
 import logging
 
@@ -30,7 +30,24 @@ from summary_display import display_tool_summary
 seclist_file = os.path.join(current_dir, "utils", "seclist_discovery.txt")
 
 # ─── Params ──────────────────────────────────────────────────────────────────
-parser = argparse.ArgumentParser(description="Web hacking toolkit that orchestrates recon and scanning tasks") # This description appears when user writes --help
+
+parser = ArgumentParser(
+    description="""
+    WHACK (Web Hacking Automated Containerized Kit) is an automated web reconnaissance and vulnerability scanning tool. 
+    It runs multiple tools against a given target and consolidates the results into a summary CSV and formatted output.
+
+    Tools used:
+    - Nmap: Service and port scanning
+    - WhatWeb: Technology fingerprinting
+    - WafW00f: WAF detection
+    - Ffuf: Content and directory discovery
+    - Nikto: Vulnerability scanning
+
+    Note: If you're running WHACK inside a Docker container, make sure the target is accessible from within the container.
+    To scan services running on your local machine (e.g. http://127.0.0.1), use '--network host' when starting the Docker container (Linux only).
+    """,
+    formatter_class=RawTextHelpFormatter # to preserve the line breaks of the description
+)
 parser.add_argument('-u', '--url', type=str, required=True, help="Target URL. Example: http://example.com")
 parser.add_argument('-p', '--port', type=str, default="80,443", help="Target port(s), comma-separated. Default: 80,443")
 args = parser.parse_args()
@@ -250,5 +267,3 @@ if not nikto_row.empty:
 display_tool_summary(results)
     
 logging.info(f"Scan complete. Results saved to {csv_filename}")
-
-# print(tabulate(csv_file, headers='keys', tablefmt='fancy_grid'))
