@@ -45,7 +45,7 @@ def display_ffuf_result(raw_output):
 
     tables = []
     for category, entries in status_groups.items():
-        table = Table(title=f"{category}", style="dim", header_style="bold cyan")
+        table = Table(title=f"{category}", style="dim", header_style="bold white")
         table.add_column("Path", style="white")
         table.add_column("Status", justify="center")
         table.add_column("Size", justify="right")
@@ -72,11 +72,11 @@ def display_ffuf_result(raw_output):
 
     max_count = max(status_counter.values()) if status_counter else 1
 
-    def render_bar(count, max_count, width=30, color="cyan"):
+    def render_bar(count, max_count, width=30, color="bright_magenta"):
         bar_length = int((count / max_count) * width)
         return Text("█" * bar_length, style=color)
-
-    chart_table = Table(show_header=True, header_style="bold cyan")
+    
+    chart_table = Table(show_header=True, header_style="bold white")
     chart_table.add_column("Status Code", style="bold", width=12)
     chart_table.add_column("Bar", style="cyan")
     chart_table.add_column("Count", justify="right", width=6)
@@ -87,8 +87,7 @@ def display_ffuf_result(raw_output):
 
     chart_panel = Panel(
         chart_table,
-        title="[bold green]FFUF Status Code Summary",
-        border_style="green",
+        title="FFUF Status Code",
         padding=(1, 2)
     )
 
@@ -99,5 +98,5 @@ def display_ffuf_result(raw_output):
         chart_panel
     )
 
-    console.print(Panel(summary_group, title="[bold blue]FFUF Output Summary", border_style="blue"))
+    console.print(Panel(summary_group, title="[bold color(213)]🔦 FFUF Output", border_style="color(213)"))
     

@@ -27,6 +27,7 @@ from ffuf_display import display_ffuf_result
 from nikto_display import display_nikto_result
 from wafwoof_display import display_wafwoof_result
 from summary_display import display_tool_summary
+from banner_display import display_banner
 seclist_file = os.path.join(current_dir, "utils", "seclist_discovery.txt")
 
 # ─── Params ──────────────────────────────────────────────────────────────────
@@ -110,6 +111,7 @@ logging.basicConfig(
     ]
 )
 
+display_banner()
 logging.info(f"Target URL: {url}")
 logging.info(f"Ports to scan: {ports}")
 

@@ -46,14 +46,13 @@ def display_nikto_result(raw_output):
         console.print("[bold yellow]No vulnerabilities or findings reported by Nikto.[/bold yellow]")
         return
 
-    table = Table(title="🛡️ Nikto Findings", show_lines=True)
-    table.add_column("Path", style="cyan", overflow="fold")
+    table = Table(show_lines=True)
+    table.add_column("Path", style="white", overflow="fold")
     table.add_column("Description", style="white", overflow="fold")
-    table.add_column("Reference", style="magenta", overflow="fold")
+    table.add_column("Reference", style="color(213)", overflow="fold")
 
     for item in findings:
         table.add_row(item["path"], item["description"], item["reference"])
 
-    # Wrap in blue panel
     group = Group(table)
-    console.print(Panel(group, title="[bold blue]Nikto Output Summary", border_style="blue"))
+    console.print(Panel(group, title="[bold color(213)]🛡️ Nikto Output", border_style="color(213)"))

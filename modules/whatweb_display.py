@@ -21,14 +21,9 @@ def display_whatweb_result(raw_output):
         console.print("[bold red]No plugins detected in WhatWeb output.[/bold red]")
         return
 
-    table = Table(
-        title="🔍 WhatWeb Detected Technologies",
-        box=box.SIMPLE_HEAD,
-        title_style="bold green",
-        show_lines=True
-    )
+    table = Table(box=box.SIMPLE_HEAD, show_lines=True)
 
-    table.add_column("Plugin", style="cyan", no_wrap=True)
+    table.add_column("Plugin", style="bright_magenta", no_wrap=True)
     table.add_column("Value", style="white")
 
     for plugin, value in matches:
@@ -47,4 +42,5 @@ def display_whatweb_result(raw_output):
 
         table.add_row(plugin, value)
 
-    console.print(Panel(table, title="[bold blue]WhatWeb Output Summary", border_style="blue"))
+    console.print(Panel(table, title="[bold color(213)]🛠️ WhatWeb Output", border_style="color(213)"))
+c

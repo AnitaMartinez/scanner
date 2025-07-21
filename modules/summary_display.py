@@ -1,6 +1,5 @@
 from rich.console import Console
 from rich.tree import Tree
-from rich.panel import Panel
 from rich.text import Text
 
 console = Console()
@@ -36,11 +35,14 @@ def display_tool_summary(results):
 
         tool_status[tool] = (ok, message)
     
-    summary_tree = Tree("[bold blue]Tool Results Summary[/bold blue]")
+    summary_tree = Tree("[bold color(213)]Tool Results Summary[/bold color(213)]")
 
     for tool, (ok, message) in tool_status.items():
         icon = "✅" if ok else "❌"
         tool_line = f"{tool.ljust(12, '.')} {icon}  {message}"
-        summary_tree.add(Text(tool_line, style="green" if ok else "red"))
+        summary_tree.add(Text(tool_line, style="white" if ok else "red"))
 
-    console.print(Panel(summary_tree, border_style="blue"))
+    print("\n")
+    console.print(summary_tree)
+    print("\n")
+    

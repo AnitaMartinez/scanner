@@ -26,11 +26,11 @@ def display_nmap_result(raw_output):
         console.print("[bold red]No open ports found.[/bold red]")
         return
 
-    table = Table(title="📡 Nmap Port Scan", show_lines=True)
+    table = Table(show_lines=True)
     table.add_column("Port", style="cyan", no_wrap=True)
     table.add_column("State", style="green")
     table.add_column("Service", style="white")
-    table.add_column("Version", style="magenta")
+    table.add_column("Version", style="bright_magenta")
 
     for entry in service_lines:
         parts = entry.split()
@@ -39,7 +39,7 @@ def display_nmap_result(raw_output):
         version = " ".join(parts[3:]) if len(parts) > 3 else "?"
         table.add_row(port, state, service, version)
 
-    console.print(Panel(table, title="[bold blue]Nmap Output Summary", border_style="blue"))
+    console.print(Panel(table, title="[bold color(213)]📡 Nmap Output", border_style="color(213)"))
 
     if fingerprint_warning and fingerprint_block:
         fingerprint_text = "\n".join(fingerprint_block[:20])  # keep it readable
