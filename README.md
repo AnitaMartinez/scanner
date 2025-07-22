@@ -14,13 +14,14 @@ WHACK runs the following tools automatically:
 Results are cleaned, parsed, and saved into a CSV report, with a structured summary displayed in the terminal.
 
 ##### Options:
-  - `-h, --help`       show this help message and exit
-  - `-u, --url URL`    Target URL. Example: http://example.com
-  - `-p, --port PORT`  Target port(s), comma-separated. Default: 80,443
+  `-h, --help`       show this help message and exit
+  `-u, --url URL`    Target URL. Example: http://example.com
+  `-p, --port PORT`  Target port(s), comma-separated. Default: 80,443
+  `-t, --tool TOOL`  Tools to run, comma-separated. Options: all (default), nmap, whatweb, wafwoof, ffuf, nikto
 
-####  🔒 Disclaimer
+####  ⚠️ Disclaimer!!
 
-This tool is intended for authorized testing and educational purposes only. Do not use it against systems you don't own or have explicit permission to test.
+This tool is intended for authorized testing and educational purposes only. **Do not use it against systems you don't own or have explicit permission to test**.
 
 ---
 

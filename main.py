@@ -49,29 +49,49 @@ parser = ArgumentParser(
     """,
     formatter_class=RawTextHelpFormatter # to preserve the line breaks of the description
 )
+
 parser.add_argument('-u', '--url', type=str, required=True, help="Target URL. Example: http://example.com")
 parser.add_argument('-p', '--port', type=str, default="80,443", help="Target port(s), comma-separated. Default: 80,443")
+parser.add_argument('-t', '--tool', type=str, default="all", help="Tools to run, comma-separated. Options: all (default), nmap, whatweb, wafwoof, ffuf, nikto")
 args = parser.parse_args()
 
 # ─── Globals ──────────────────────────────────────────────────────────────────
 url = args.url
 ports = args.port
+tools=args.tool
 target_ip = urlparse(url).hostname # To extract IP from the URL
 results = []
 spinner_running = False
+allowed_tools = ["nmap", "whatweb", "wafwoof", "ffuf", "nikto"]
 
 # ─── Tools and Commands ────────────────────────────────────────────────────────
 commands = {
     # General Scanning
     "Nmap": ["nmap", "-sV", "-p", ports, target_ip],
     # Technology Fingerprint
-    "WhatWeb": ["whatweb", url],
+    "Whatweb": ["whatweb", url],
     "Wafwoof": ["wafw00f", url],
     # Directory Enumeration (brute force). Content discovery
     "Ffuf": ["ffuf", "-u", f"{url}/FUZZ" , "-w", seclist_file, "-of", "json", "-o", "./outputs/ffuf_result.json"], 
     # Vulnerability Scanning
     "Nikto": ["nikto", "-h", url]
 }
+
+def filterCommands():
+    if tools == "all":
+        return commands
+    selected_tools = [tool.strip().lower() for tool in tools.split(",")]
+    allowed_lower = [t.lower() for t in allowed_tools]
+
+    invalid_tools = [tool for tool in selected_tools if tool not in allowed_lower]
+    if invalid_tools:
+        logging.error(f"Invalid tool(s) specified: {', '.join(invalid_tools)}")
+        sys.exit(1)
+
+    # Map from lowercase tool name to original command key
+    key_map = {key.lower(): key for key in commands.keys()}
+    filtered = {key_map[tool]: commands[key_map[tool]] for tool in selected_tools}
+    return filtered
 
 # ─── Spinner ─────────────────────────────────────────────────────────────
 class Spinner:
@@ -98,7 +118,7 @@ class Spinner:
         self.stop_running = True
         if self.thread is not None:
             self.thread.join()
-        sys.stdout.write("\r" + " " * (len(self.message) + 2) + "\r")  # Clear line
+        sys.stdout.write("\r" + " " * (len(self.message) + 2) + "\r")
         sys.stdout.flush()
 
 # ─── Log Setup ─────────────────────────────────────────────────────────────
@@ -152,7 +172,7 @@ def filter_by_length(
     ffuf_results, wildcard_length):
         return [result for result in ffuf_results if result["length"] != wildcard_length]
 
-for tool_name, cmd in commands.items():
+for tool_name, cmd in filterCommands().items():
     logging.info(f"Running {tool_name}")
     spinner = Spinner(f"Running {tool_name}")
     spinner.start()
@@ -170,7 +190,7 @@ for tool_name, cmd in commands.items():
             if "No WAF detected" in line or "is behind" in line:
                 output = line
                 break
-    elif tool_name == "WhatWeb":
+    elif tool_name == "Whatweb":
         output = output.split(" ", 1)[1]
     elif tool_name == "Nmap":
         filtered_lines = []
@@ -243,7 +263,7 @@ if not nmap_row.empty:
     display_nmap_result(raw_output)
 
 # -- WhatWeb --
-whatweb_row = csv_file[csv_file["Tool"] == "WhatWeb"]
+whatweb_row = csv_file[csv_file["Tool"] == "Whatweb"]
 if not whatweb_row.empty:
     raw_output = whatweb_row["Result"].values[0]
     display_whatweb_result(raw_output)
